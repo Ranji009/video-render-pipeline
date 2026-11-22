@@ -1,0 +1,62 @@
+name: Render Video (Cloud)
+
+on:
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: 'Video topic/title'
+        required: true
+        type: string
+      narration:
+        description: 'Narration script text'
+        required: true
+        type: string
+      voice:
+        description: 'edge-tts voice (e.g., en-US-AriaNeural)'
+        required: false
+        default: 'en-US-AriaNeural'
+        type: string
+      style:
+        description: 'Video style'
+        required: false
+        default: 'motion'
+        type: choice
+        options:
+          - motion
+          - explainer
+          - shorts
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          pip install -q edge-tts Pillow
+
+      - name: Generate video
+        env:
+          TOPIC: ${{ github.event.inputs.topic }}
+          NARRATION: ${{ github.event.inputs.narration }}
+          VOICE: ${{ github.event.inputs.voice }}
+          STYLE: ${{ github.event.inputs.style }}
+        run: |
+          python render.py
+
+      - name: Upload video
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-video
+          path: output/*.mp4
+          retention-days: 30
