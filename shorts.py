@@ -11,7 +11,7 @@ PROMPT = os.environ.get("PROMPT", "cyberpunk cat in neon Tokyo, cinematic lighti
 NARRATION = os.environ.get("NARRATION", "Most people pay twenty dollars a month for AI images. This does it for free.")
 VOICE = os.environ.get("VOICE", "en-US-AriaNeural")
 HOOK = os.environ.get("HOOK", "100% FREE AI IMAGES")
-SITE = os.environ.get("SITE", "https://pollinations.ai/play")
+SITE = os.environ.get("SITE", "https://deepai.org/machine-learning-model/text2img")
 W, H, FPS = 1080, 1920, 30
 
 def run(cmd, **kw):
@@ -42,9 +42,10 @@ try:
                             locale="en-US")
         pg = ctx.new_page()
         pg.goto(SITE, wait_until="domcontentloaded", timeout=90000)
-        pg.wait_for_timeout(5000)
+        pg.wait_for_timeout(3500)
         print("title:", pg.title(), flush=True)
         pg.screenshot(path=str(WORK/"debug1.png"))
+        before = pg.evaluate("() => document.images.length")
         box = None
         for sel in ["textarea","input[type=text]","input:not([type])","[contenteditable=true]"]:
             for el in pg.query_selector_all(sel):
@@ -56,23 +57,39 @@ try:
             if box: break
         if box:
             box.click()
-            pg.wait_for_timeout(400)
-            pg.keyboard.type(PROMPT, delay=55)
-            pg.wait_for_timeout(700)
-            pg.keyboard.press("Enter")
-            print("typed prompt", flush=True)
-            for _ in range(35):
+            pg.wait_for_timeout(300)
+            pg.keyboard.type(PROMPT, delay=45)
+            pg.wait_for_timeout(500)
+            clicked = False
+            for name in ["generate","create","run","submit","make","draw"]:
+                try:
+                    btn = pg.get_by_role("button", name=re.compile(name, re.I)).first
+                    if btn.count() and btn.is_visible():
+                        btn.click(); clicked = True
+                        print("clicked button:", name, flush=True)
+                        break
+                except Exception:
+                    pass
+            if not clicked:
+                pg.keyboard.press("Enter")
+                print("pressed enter", flush=True)
+            for _ in range(60):
                 pg.wait_for_timeout(1000)
-                if pg.evaluate("() => [...document.images].some(i => i.naturalWidth > 500)"):
+                ok = pg.evaluate("""(b) => [...document.images].some(i => i.naturalWidth > 380 && i.src && !i.src.includes('icon')) || document.images.length > b + 1""", before)
+                if ok:
                     found_image = True; break
             print("found_image", found_image, flush=True)
-            pg.wait_for_timeout(3000)
-            pg.mouse.wheel(0, 420)
-            pg.wait_for_timeout(2500)
-            pg.mouse.wheel(0, -200)
+            gate = pg.evaluate("() => /sign in to|sign up to|connect your|log in to|requires an account/i.test(document.body.innerText)")
+            print("gate text:", gate, flush=True)
+            if found_image:
+                pg.wait_for_timeout(2500)
+                pg.mouse.wheel(0, 500)
+                pg.wait_for_timeout(3000)
+            else:
+                pg.wait_for_timeout(1500)
         else:
             print("no input box found", flush=True)
-        pg.wait_for_timeout(2500)
+        pg.wait_for_timeout(1500)
         pg.screenshot(path=str(WORK/"debug2.png"))
         ctx.close(); b.close()
 except Exception as e:
@@ -120,7 +137,7 @@ if img and img.exists():
     y = 130
     for ln in lines[:4]:
         d.text((60,y), ln, font=f1, fill=(255,255,255,255)); y += 74
-    d.text((60, H-330), "FREE  •  NO SIGNUP  •  NO WATERMARK", font=f2, fill=(255,214,0,255))
+    d.text((60, H-330), "FREE  -  NO SIGNUP  -  INSTANT", font=f2, fill=(255,214,0,255))
     im = Image.alpha_composite(im.convert("RGBA"), ov).convert("RGB")
     im.save(card)
     print("card made", flush=True)
