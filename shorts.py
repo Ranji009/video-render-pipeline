@@ -224,4 +224,19 @@ for t in (1.5, 5, 9, 14, 19, 24):
         subprocess.run(["ffmpeg","-y","-ss",str(t),"-i",str(OUT/"short.mp4"),"-frames:v","1","-q:v","3",str(WORK/f"frame_{t}.jpg")], check=False)
     except Exception:
         pass
+
+frames = sorted(WORK.glob("frame_*.jpg"))
+if frames:
+    from PIL import Image, ImageDraw
+    tw, th = 340, 604
+    sheet = Image.new("RGB", (tw*3, th*2), (8,8,12))
+    for i, f in enumerate(frames[:6]):
+        try:
+            im = Image.open(f).convert("RGB").resize((tw, th), Image.LANCZOS)
+            sheet.paste(im, ((i % 3)*tw, (i // 3)*th))
+        except Exception:
+            pass
+    sheet.save(OUT/"preview_sheet.jpg", quality=90)
+    print("sheet made", flush=True)
+
 print("DONE", (OUT/"short.mp4").stat().st_size, flush=True)
