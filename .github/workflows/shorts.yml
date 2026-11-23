@@ -1,0 +1,64 @@
+name: Build Short (Screen Demo)
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: 'Prompt typed in the tool'
+        required: true
+        type: string
+      narration:
+        description: 'Voiceover script'
+        required: true
+        type: string
+      hook:
+        description: 'Big text on the first 3 seconds'
+        required: false
+        default: '100% FREE AI IMAGES'
+        type: string
+      voice:
+        description: 'edge-tts voice'
+        required: false
+        default: 'en-US-AriaNeural'
+        type: string
+      site:
+        description: 'Tool page to record'
+        required: false
+        default: 'https://pollinations.ai/play'
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-dejavu
+          pip install -q edge-tts Pillow playwright
+          python -m playwright install --with-deps chromium
+      - name: Build short
+        env:
+          PROMPT: ${{ github.event.inputs.prompt }}
+          NARRATION: ${{ github.event.inputs.narration }}
+          HOOK: ${{ github.event.inputs.hook }}
+          VOICE: ${{ github.event.inputs.voice }}
+          SITE: ${{ github.event.inputs.site }}
+        run: python shorts.py
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: short
+          path: |
+            output/short.mp4
+            work/debug1.png
+            work/debug2.png
+          retention-days: 30
+      - name: Logs on failure
+        if: failure()
+        run: ls -la work output || true
