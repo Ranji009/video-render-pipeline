@@ -37,7 +37,7 @@ try:
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
         b = p.chromium.launch(headless=True, args=["--no-sandbox","--disable-blink-features=AutomationControlled"])
-        ctx = b.new_context(viewport={"width":W,"height":H}, record_video_dir=str(REC),
+        ctx = b.new_context(viewport={"width":540,"height":960}, device_scale_factor=2, record_video_dir=str(REC),
                             record_video_size={"width":W,"height":H},
                             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36",
                             locale="en-US")
@@ -197,16 +197,28 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Cap,DejaVu Sans,62,&H00FFFFFF,&H000000FF,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,1,7,0,2,60,60,300,1
-Style: Hook,DejaVu Sans,86,&H0000E6FF,&H000000FF,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,1,8,0,5,50,50,0,1
+Style: Cap,DejaVu Sans,50,&H00FFFFFF,&H000000FF,&H00000000,&HB4000000,-1,0,0,0,100,100,0,0,1,6,0,2,70,70,340,1
+Style: Hook,DejaVu Sans,64,&H0000E6FF,&H000000FF,&H00000000,&HB4000000,-1,0,0,0,100,100,0,0,1,7,0,5,60,60,0,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
-body = ["Dialogue: 0," + ass_time(0.0) + "," + ass_time(2.8) + ",Hook,,0,0,0,,{\\an5\\pos(540,300)}" + HOOK]
+def wrap(s, n=24):
+    words = s.split(); lines = []; cur = ""
+    for w in words:
+        t = (cur + " " + w).strip()
+        if len(t) > n and cur:
+            lines.append(cur); cur = w
+        else:
+            cur = t
+    if cur: lines.append(cur)
+    return "\\N".join(lines)
+
+hook_txt = wrap(HOOK.replace(" - ", " "), 16)
+body = ["Dialogue: 0," + ass_time(0.0) + "," + ass_time(2.8) + ",Hook,,0,0,0,,{\\an5\\pos(540,330)}" + hook_txt]
 for a,b,txt in events:
     txt = txt.replace("{","(").replace("}","").replace("\n"," ")
-    body.append(f"Dialogue: 0,{ass_time(a)},{ass_time(b)},Cap,,0,0,0,,{txt}")
+    body.append(f"Dialogue: 0,{ass_time(a)},{ass_time(b)},Cap,,0,0,0,,{wrap(txt)}")
 (WORK/"captions.ass").write_text(head + "\n".join(body), encoding="utf-8")
 
 with open(WORK/"list.txt","w") as f:
