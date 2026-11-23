@@ -56,6 +56,7 @@ jobs:
           name: short
           path: |
             output/short.mp4
+            output/preview_sheet.jpg
             work/frame_*.jpg
             work/debug1.png
             work/debug2.png
